@@ -15,6 +15,7 @@ if if_spark == "spark":
 
 	conf = SparkConf().setAppName("inf553")
 	sc = SparkContext(conf=conf)
+	sc.setLogLevel("OFF")
 	reviewRDD = sc.textFile(review_file)
 	businessRDD = sc.textFile(business_file)	
 

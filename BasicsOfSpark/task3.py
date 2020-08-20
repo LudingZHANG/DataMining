@@ -19,8 +19,6 @@ def printf(iterator):
 def star_partitioner(stars):
 	return hash(stars)
 
-def b_id_partitioner(business_id):
-	return hash(business_id)
 
 textRDD = sc.textFile(input_file)
 # sampleRDD = sc.textFile(input_file)
@@ -37,9 +35,10 @@ if partition_type == "default":
 
 elif partition_type == "customized":
 	output = {}
+	partitioned = textRDD.map(lambda s:(json.loads(s)["business_id"],1)).partitionBy(n_partitions,star_partitioner)
 	output["n_partitions"] = n_partitions
-	output["n_items"] = textRDD.map(lambda s:(json.loads(s)["business_id"],json.loads(s)["stars"])).partitionBy(n_partitions,star_partitioner).mapPartitions(printf).collect()
-	output["result"] = sc.parallelize(tuple(textRDD.map(lambda s:(json.loads(s)["business_id"],json.loads(s)["stars"])).partitionBy(n_partitions,star_partitioner).countByKey().items())).filter(lambda s : s[1] > n).map(lambda s: [s[0],s[1]]).collect()
+	output["n_items"] = partitioned.mapPartitions(printf).collect()
+	output["result"] = sc.parallelize(tuple(partitioned.countByKey().items())).filter(lambda s : s[1] > n).map(lambda s: [s[0],s[1]]).collect()
 
 	with open(output_file,"w") as f:
 		json.dump(output,f)

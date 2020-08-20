@@ -5,6 +5,7 @@ import os
 import string
 conf = SparkConf().setAppName("inf553")
 sc = SparkContext(conf=conf)
+sc.setLogLevel("OFF")
 
 input_file = sys.argv[1]
 output_file = sys.argv[2]
@@ -33,29 +34,20 @@ textRDD = sc.textFile(input_file)
 #textRDD = sc.parallelize(sampleRDD.take(1000))
 
 total_reviews = textRDD.count()
-# print("OUTPUT1 ==========>>>>>> Total number of reviews :- ",total_reviews)
 
 num_reviews = len(textRDD.filter(lambda s: int(json.loads(s)["date"].split(" ")[0].split("-")[0]) == given_year).collect())
-# print("OUTPUT2 ==========>>>>>> Number of reviews in the year ",given_year, " :- ",num_reviews)
 
 num_distinct_users = len(textRDD.map(lambda s: json.loads(s)["user_id"]).distinct().collect())
-# print("OUTPUT3 ==========>>>>>> Number of distinct users :- ",num_distinct_users)
 
 users = textRDD.map(lambda s: (json.loads(s)["user_id"],1)).countByKey()
 top_users = sc.parallelize(tuple(users.items())).sortBy(lambda x: (-x[1],x[0])).map(lambda s :[s[0],s[1]]).take(top_m_users)
-# print("OUTPUT4 ==========>>>>>>> Top m users :- ", top_users)
 
 word_count = textRDD.flatMap(lambda s: remove_stopwords(json.loads(s)["text"])).map(lambda x: (x,1)).countByKey()
-#print(word_count)
-#.flatMap(lambda s : s.split()).map(lambda x: (x,1)).countByKey()
 frequent_words = sc.parallelize(tuple(word_count.items())).sortBy(lambda x: (-x[1],x[0])).keys().take(top_n_words)
-#print("OUTPUT5 ==========>>>>>>> Top n most frequent words :- ", frequent_words)
 
 
 output_dict = {"A":total_reviews,"B":num_reviews,"C":num_distinct_users,"D": top_users,"E":frequent_words}
-# output_dict = {"E":frequent_words}
 
 with open(output_file,"w") as f:
 	json.dump(output_dict, f)
 
-# print("===========================Done=======================",output_dict)
